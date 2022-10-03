@@ -740,6 +740,7 @@ def check_schema(schema, validate_default=True):
             items = list(schema.items())
             items.append(("default", ""))
             return items
+
     else:
         applicable_validators = methodcaller("items")
 
@@ -747,7 +748,6 @@ def check_schema(schema, validate_default=True):
     meta_schema = _load_schema_cached(meta_schema_id, extension.get_default_resolver(), False, False)
 
     resolver = _make_resolver(extension.get_default_resolver())
-
 
     cls = mvalidators.create(
         meta_schema=meta_schema,
