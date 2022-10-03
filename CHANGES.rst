@@ -3,6 +3,7 @@
 
 - Update citation. [#1184]
 - Add search support to `~asdf.AsdfFile.schema_info`. [#1187]
+- Unpin jsonschema, fix default validation for jsonschema 4.10+ [#1203]
 
 2.13.0 (2022-08-19)
 -------------------
