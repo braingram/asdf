@@ -37,7 +37,7 @@ class AsdfProvisionalAPIWarning(AsdfWarning, FutureWarning):
     """
 
 
-def asdf_provisional(msg):
+def provisional(msg):
     """
     Mark a function as provisional.
 
@@ -78,7 +78,7 @@ def asdf_provisional(msg):
     raise TypeError(f"{type(msg)!r} is not a valid type for msg.")
 
 
-def asdf_provisional_attribute(name, alt_name=None, msg=None):
+def provisional_attribute(name, alt_name=None, msg=None):
     """
     Used to mark a public attribute as provisional.
 
@@ -117,9 +117,9 @@ def asdf_provisional_attribute(name, alt_name=None, msg=None):
     return property(provisional_getter, provisional_setter, provisional_deleter)
 
 
-def asdf_provisional_argument(name, msg=None):
+def provisional_argument(name, msg=None):
     """
-    Used to mark a public, optional argument as provisional.
+    Used to mark a function argument as provisional.
 
     Parameters
     ----------

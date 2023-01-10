@@ -4,7 +4,7 @@ from asdf import exceptions
 
 
 def test_asdf_provisional_function_default_message():
-    @exceptions.asdf_provisional
+    @exceptions.provisional
     def provisional_function(foo, bar=None):
         return (foo, bar)
 
@@ -15,7 +15,7 @@ def test_asdf_provisional_function_default_message():
 
 
 def test_asdf_provisional_class_default_message():
-    @exceptions.asdf_provisional
+    @exceptions.provisional
     class ProvisionalClass:
         def __init__(self, foo, bar=None):
             self.foo = foo
@@ -32,7 +32,7 @@ def test_asdf_provisional_class_default_message():
 def test_asdf_provisional_function_custom_message():
     msg = "This is a custom message"
 
-    @exceptions.asdf_provisional(msg)
+    @exceptions.provisional(msg)
     def provisional_function(foo, bar=None):
         return (foo, bar)
 
@@ -43,7 +43,7 @@ def test_asdf_provisional_function_custom_message():
 def test_asdf_provisional_class_custom_message():
     msg = "This is a custom message"
 
-    @exceptions.asdf_provisional(msg)
+    @exceptions.provisional(msg)
     class ProvisionalClass:
         def __init__(self, foo, bar=None):
             self.foo = foo
@@ -57,12 +57,12 @@ def test_asdf_provisional_class_custom_message():
 
 def test_asdf_provisional_error():
     with pytest.raises(TypeError, match=".* is not a valid type for msg."):
-        exceptions.asdf_provisional({"foo": "bar"})
+        exceptions.provisional({"foo": "bar"})
 
 
 def test_asdf_provisional_attribute_default_message():
     class ProvisionalClass:
-        foo = exceptions.asdf_provisional_attribute("foo")
+        foo = exceptions.provisional_attribute("foo")
 
     new = ProvisionalClass()
 
@@ -92,7 +92,7 @@ def test_asdf_provisional_attribute_custom():
     msg = "This is a custom message"
 
     class ProvisionalClass:
-        foo = exceptions.asdf_provisional_attribute("foo", alt_name="bar", msg=msg)
+        foo = exceptions.provisional_attribute("foo", alt_name="bar", msg=msg)
 
     new = ProvisionalClass()
 
@@ -110,7 +110,7 @@ def test_asdf_provisional_attribute_custom():
 
 
 def test_asdf_provisional_argument_default_message():
-    @exceptions.asdf_provisional_argument("bar")
+    @exceptions.provisional_argument("bar")
     def func1(foo, bar=None):
         return (foo, bar)
 
@@ -129,7 +129,7 @@ def test_asdf_provisional_argument_default_message():
     ):
         assert ("foo", "bar") == func1(foo="foo", bar="bar")
 
-    @exceptions.asdf_provisional_argument("foo")
+    @exceptions.provisional_argument("foo")
     def func2(foo, bar=None):
         return (foo, bar)
 
@@ -152,7 +152,7 @@ def test_asdf_provisional_argument_default_message():
 def test_asdf_provisional_argument_custom_message():
     msg = "This is a custom message"
 
-    @exceptions.asdf_provisional_argument("bar", msg)
+    @exceptions.provisional_argument("bar", msg)
     def func1(foo, bar=None):
         return (foo, bar)
 
@@ -165,7 +165,7 @@ def test_asdf_provisional_argument_custom_message():
     with pytest.warns(exceptions.AsdfProvisionalAPIWarning, match=msg):
         assert ("foo", "bar") == func1(foo="foo", bar="bar")
 
-    @exceptions.asdf_provisional_argument("foo", msg)
+    @exceptions.provisional_argument("foo", msg)
     def func2(foo, bar=None):
         return (foo, bar)
 
@@ -182,6 +182,6 @@ def test_asdf_provisional_argument_custom_message():
 def test_asdf_provisional_argument_error():
     with pytest.raises(ValueError, match=r".* is not a valid argument for .*."):
 
-        @exceptions.asdf_provisional_argument("baz")
+        @exceptions.provisional_argument("baz")
         def func(foo, bar=None):
             return (foo, bar)
