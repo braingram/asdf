@@ -1,3 +1,8 @@
+import functools
+import inspect
+import warnings
+
+
 class AsdfWarning(Warning):
     """
     The base warning class from which all ASDF warnings should inherit.
@@ -30,3 +35,44 @@ class AsdfProvisionalAPIWarning(AsdfWarning, FutureWarning):
     are likely to be added in a future ASDF version. However, Use of
     provisional features is highly discouraged for production code.
     """
+
+
+def asdf_provisional(msg):
+    """
+    Mark a function as provisional.
+
+    Parameters
+    ----------
+    msg: str
+        The warning message to display. If not provided, a default
+    """
+
+    if isinstance(msg, (bytes, str)):
+
+        def decorator(func):
+            @functools.wraps(func)
+            def wrapper(*args, **kwargs):
+                warnings.warn(msg, AsdfProvisionalAPIWarning)
+                return func(*args, **kwargs)
+
+            return wrapper
+
+        return decorator
+
+    elif inspect.isclass(msg) or inspect.isfunction(msg):
+        func = msg
+        msg = f"{func.__name__} has a Provisional API and is subject to change"
+
+        if inspect.isclass(func):
+            msg = f"Class: {msg}"
+        else:
+            msg = f"Function: {msg}"
+
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            warnings.warn(msg, AsdfProvisionalAPIWarning)
+            return func(*args, **kwargs)
+
+        return wrapper
+
+    raise TypeError(f"{type(msg)!r} is not a valid type for msg.")
