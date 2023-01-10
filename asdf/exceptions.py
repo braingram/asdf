@@ -76,3 +76,42 @@ def asdf_provisional(msg):
         return wrapper
 
     raise TypeError(f"{type(msg)!r} is not a valid type for msg.")
+
+
+def asdf_provisional_attribute(name, alt_name=None, msg=None):
+    """
+    Used to mark a public attribute as provisional.
+
+    Parameters
+    ----------
+    name: str
+        The name of the attribute.
+
+    alt_name: str, optional
+        An alternative name for the attribute. If not provided, the default is
+        will prepend an underscore to the attribute name.
+
+    message: str, optional
+        The warning message to display. If not provided, a default
+        message will be used.
+    """
+
+    private_name = f"_{name}" if alt_name is None else alt_name
+    msg = f"{name} is Provisional attribute, the API and is subject to change!" if msg is None else msg
+
+    def provisional_getter(self):
+        warnings.warn(f"Getting: {msg}", AsdfProvisionalAPIWarning)
+
+        return getattr(self, private_name)
+
+    def provisional_setter(self, value):
+        warnings.warn(f"Setting: {msg}", AsdfProvisionalAPIWarning)
+
+        setattr(self, private_name, value)
+
+    def provisional_deleter(self):
+        warnings.warn(f"Deleting: {msg}", AsdfProvisionalAPIWarning)
+
+        delattr(self, private_name)
+
+    return property(provisional_getter, provisional_setter, provisional_deleter)
