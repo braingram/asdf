@@ -107,3 +107,81 @@ def test_asdf_provisional_attribute_custom():
         del new.foo
 
         assert not hasattr(new, "bar")
+
+
+def test_asdf_provisional_argument_default_message():
+    @exceptions.asdf_provisional_argument("bar")
+    def func1(foo, bar=None):
+        return (foo, bar)
+
+    with pytest.warns(
+        exceptions.AsdfProvisionalAPIWarning, match=r"bar is a Provisional argument, the API and is subject to change!"
+    ):
+        assert ("foo", "bar") == func1("foo", "bar")
+
+    with pytest.warns(
+        exceptions.AsdfProvisionalAPIWarning, match=r"bar is a Provisional argument, the API and is subject to change!"
+    ):
+        assert ("foo", "bar") == func1("foo", bar="bar")
+
+    with pytest.warns(
+        exceptions.AsdfProvisionalAPIWarning, match=r"bar is a Provisional argument, the API and is subject to change!"
+    ):
+        assert ("foo", "bar") == func1(foo="foo", bar="bar")
+
+    @exceptions.asdf_provisional_argument("foo")
+    def func2(foo, bar=None):
+        return (foo, bar)
+
+    with pytest.warns(
+        exceptions.AsdfProvisionalAPIWarning, match=r"foo is a Provisional argument, the API and is subject to change!"
+    ):
+        assert ("foo", "bar") == func2("foo", "bar")
+
+    with pytest.warns(
+        exceptions.AsdfProvisionalAPIWarning, match=r"foo is a Provisional argument, the API and is subject to change!"
+    ):
+        assert ("foo", "bar") == func2("foo", bar="bar")
+
+    with pytest.warns(
+        exceptions.AsdfProvisionalAPIWarning, match=r"foo is a Provisional argument, the API and is subject to change!"
+    ):
+        assert ("foo", "bar") == func2(foo="foo", bar="bar")
+
+
+def test_asdf_provisional_argument_custom_message():
+    msg = "This is a custom message"
+
+    @exceptions.asdf_provisional_argument("bar", msg)
+    def func1(foo, bar=None):
+        return (foo, bar)
+
+    with pytest.warns(exceptions.AsdfProvisionalAPIWarning, match=msg):
+        assert ("foo", "bar") == func1("foo", "bar")
+
+    with pytest.warns(exceptions.AsdfProvisionalAPIWarning, match=msg):
+        assert ("foo", "bar") == func1("foo", bar="bar")
+
+    with pytest.warns(exceptions.AsdfProvisionalAPIWarning, match=msg):
+        assert ("foo", "bar") == func1(foo="foo", bar="bar")
+
+    @exceptions.asdf_provisional_argument("foo", msg)
+    def func2(foo, bar=None):
+        return (foo, bar)
+
+    with pytest.warns(exceptions.AsdfProvisionalAPIWarning, match=msg):
+        assert ("foo", "bar") == func2("foo", "bar")
+
+    with pytest.warns(exceptions.AsdfProvisionalAPIWarning, match=msg):
+        assert ("foo", "bar") == func2("foo", bar="bar")
+
+    with pytest.warns(exceptions.AsdfProvisionalAPIWarning, match=msg):
+        assert ("foo", "bar") == func2(foo="foo", bar="bar")
+
+
+def test_asdf_provisional_argument_error():
+    with pytest.raises(ValueError, match=r".* is not a valid argument for .*."):
+
+        @exceptions.asdf_provisional_argument("baz")
+        def func(foo, bar=None):
+            return (foo, bar)

@@ -115,3 +115,38 @@ def asdf_provisional_attribute(name, alt_name=None, msg=None):
         delattr(self, private_name)
 
     return property(provisional_getter, provisional_setter, provisional_deleter)
+
+
+def asdf_provisional_argument(name, msg=None):
+    """
+    Used to mark a public, optional argument as provisional.
+
+    Parameters
+    ----------
+    name: str
+        The name of the argument.
+
+    message: str, optional
+        The warning message to display. If not provided, a default
+        message will be used.
+    """
+
+    msg = f"{name} is a Provisional argument, the API and is subject to change!" if msg is None else msg
+
+    def decorator(func):
+        sig = inspect.signature(func)
+        if name in sig.parameters:
+            index = list(sig.parameters).index(name)
+
+            @functools.wraps(func)
+            def wrapper(*args, **kwargs):
+                if name in kwargs or len(args) > index:
+                    warnings.warn(msg, AsdfProvisionalAPIWarning)
+
+                return func(*args, **kwargs)
+
+            return wrapper
+        else:
+            raise ValueError(f"{name} is not a valid argument for {func.__name__}.")
+
+    return decorator
