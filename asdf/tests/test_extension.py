@@ -2,7 +2,7 @@ import pytest
 from packaging.specifiers import SpecifierSet
 
 from asdf import config_context
-from asdf.exceptions import AsdfDeprecationWarning
+from asdf.exceptions import AsdfCustomTypeDeprecationWarning, AsdfDeprecationWarning
 from asdf.extension import (
     AsdfExtension,
     BuiltinExtension,
@@ -26,16 +26,24 @@ def test_builtin_extension():
     assert_extension_correctness(extension)
 
 
-class LegacyType(dict, CustomType):
-    organization = "somewhere.org"
-    name = "test"
-    version = "1.0.0"
+@pytest.fixture()
+def legacy_extension():
+    with pytest.warns(
+        AsdfCustomTypeDeprecationWarning,
+        match=r"LegacyType from .* subclasses the deprecated CustomType class.*",
+    ):
 
+        class LegacyType(dict, CustomType):
+            organization = "somewhere.org"
+            name = "test"
+            version = "1.0.0"
 
-class LegacyExtension:
-    types = [LegacyType]
-    tag_mapping = [("tag:somewhere.org/", "http://somewhere.org/{tag_suffix}")]
-    url_mapping = [("http://somewhere.org/", "http://somewhere.org/{url_suffix}.yaml")]
+    class LegacyExtension:
+        types = [LegacyType]
+        tag_mapping = [("tag:somewhere.org/", "http://somewhere.org/{tag_suffix}")]
+        url_mapping = [("http://somewhere.org/", "http://somewhere.org/{url_suffix}.yaml")]
+
+    return LegacyExtension, LegacyType
 
 
 class MinimumExtension:
@@ -289,12 +297,14 @@ def test_extension_proxy_tags():
     assert proxy.converters[0].tags == [foo_tag_uri]
 
 
-def test_extension_proxy_legacy():
+def test_extension_proxy_legacy(legacy_extension):
+    LegacyExtension, LegacyType = legacy_extension  # noqa: N806
+
     extension = LegacyExtension()
     proxy = ExtensionProxy(extension, package_name="foo", package_version="1.2.3")
 
     assert proxy.extension_uri is None
-    assert proxy.legacy_class_names == {"asdf.tests.test_extension.LegacyExtension"}
+    assert proxy.legacy_class_names == {"asdf.tests.test_extension.legacy_extension.<locals>.LegacyExtension"}
     assert proxy.asdf_standard_requirement == SpecifierSet()
     assert proxy.converters == []
     assert proxy.tags == []
@@ -305,7 +315,7 @@ def test_extension_proxy_legacy():
     assert proxy.legacy is True
     assert proxy.package_name == "foo"
     assert proxy.package_version == "1.2.3"
-    assert proxy.class_name == "asdf.tests.test_extension.LegacyExtension"
+    assert proxy.class_name == "asdf.tests.test_extension.legacy_extension.<locals>.LegacyExtension"
 
 
 def test_extension_proxy_hash_and_eq():
@@ -319,7 +329,9 @@ def test_extension_proxy_hash_and_eq():
     assert proxy2 != extension
 
 
-def test_extension_proxy_repr():
+def test_extension_proxy_repr(legacy_extension):
+    LegacyExtension = legacy_extension[0]  # noqa: N806
+
     proxy = ExtensionProxy(MinimumExtension(), package_name="foo", package_version="1.2.3")
     assert "class: asdf.tests.test_extension.MinimumExtension" in repr(proxy)
     assert "package: foo==1.2.3" in repr(proxy)
@@ -331,7 +343,7 @@ def test_extension_proxy_repr():
     assert "legacy: False" in repr(proxy)
 
     proxy = ExtensionProxy(LegacyExtension(), package_name="foo", package_version="1.2.3")
-    assert "class: asdf.tests.test_extension.LegacyExtension" in repr(proxy)
+    assert "class: asdf.tests.test_extension.legacy_extension.<locals>.LegacyExtension" in repr(proxy)
     assert "package: foo==1.2.3" in repr(proxy)
     assert "legacy: True" in repr(proxy)
 
@@ -574,7 +586,9 @@ def test_converter_proxy():
         ConverterProxy(MinimumConverter(types=[object()]), extension)
 
 
-def test_get_cached_asdf_extension_list():
+def test_get_cached_asdf_extension_list(legacy_extension):
+    LegacyExtension = legacy_extension[0]  # noqa: N806
+
     extension = LegacyExtension()
     extension_list = get_cached_asdf_extension_list([extension])
     assert get_cached_asdf_extension_list([extension]) is extension_list
