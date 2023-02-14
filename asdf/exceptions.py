@@ -10,6 +10,12 @@ class AsdfDeprecationWarning(AsdfWarning, DeprecationWarning):
     """
 
 
+class AsdfCustomTypeDeprecationWarning(AsdfDeprecationWarning):
+    """
+    A warning class to indicate a deprecated CustomType.
+    """
+
+
 class AsdfConversionWarning(AsdfWarning):
     """
     Warning class used for failures to convert data into custom types.
