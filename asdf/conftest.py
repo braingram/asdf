@@ -5,6 +5,7 @@
 
 import pytest
 
+from asdf.exceptions import AsdfCustomTypeDeprecationWarning
 from asdf.tests.httpserver import HTTPServer, RangeHTTPServer
 
 
@@ -38,3 +39,30 @@ def rhttpserver(request):
     server = RangeHTTPServer()
     yield server
     server.finalize()
+
+
+@pytest.fixture()
+def custom_test_type():
+    from asdf import CustomType
+
+    with pytest.warns(
+        AsdfCustomTypeDeprecationWarning,
+        match=r"CustomTestType from .* subclasses the deprecated CustomType class.*",
+    ):
+
+        class CustomTestType(CustomType):
+            """This class is intended to be inherited by custom types that are used
+            purely for the purposes of testing. The methods ``from_tree_tagged`` and
+            ``from_tree`` are implemented solely in order to avoid custom type
+            conversion warnings.
+            """
+
+            @classmethod
+            def from_tree_tagged(cls, tree, ctx):
+                return cls.from_tree(tree.data, ctx)
+
+            @classmethod
+            def from_tree(cls, tree, ctx):
+                return tree
+
+    return CustomTestType
