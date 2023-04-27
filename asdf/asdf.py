@@ -656,9 +656,7 @@ class AsdfFile:
 
             - ``inline``: Store the data as YAML inline in the tree.
         """
-        options = self._blocks.options.get_options(arr)
-        options.storage_type = array_storage
-        self._blocks.options.set_options(arr, options)
+        self._blocks._set_array_storage(arr, array_storage)
 
     def get_array_storage(self, arr):
         """
@@ -668,7 +666,7 @@ class AsdfFile:
         ----------
         arr : numpy.ndarray
         """
-        return self._blocks.options.get_options(arr).storage_type
+        return self._blocks._get_array_storage(arr)
 
     def set_array_compression(self, arr, compression, **compression_kwargs):
         """
@@ -696,9 +694,7 @@ class AsdfFile:
               If there is no prior file, acts as None.
 
         """
-        options = self._blocks.options.get_options(arr)
-        options.compression = compression
-        options.compression_kwargs = compression_kwargs
+        self._blocks._set_array_compression(arr, compression, **compression_kwargs)
 
     def get_array_compression(self, arr):
         """
@@ -712,11 +708,11 @@ class AsdfFile:
         -------
         compression : str or None
         """
-        return self._blocks.options.get_options(arr).compression
+        return self._blocks._get_array_compression(arr)
 
     def get_array_compression_kwargs(self, arr):
         """ """
-        return self._blocks.options.get_options(arr).compression_kwargs
+        return self._blocks._get_array_compression_kwargs(arr)
 
     @classmethod
     def _parse_header_line(cls, line):
