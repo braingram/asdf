@@ -10,6 +10,9 @@ The ASDF Standard is at v1.6.0
 - Move built-in tags to converters (except ndarray and integer). [#1474]
 - Add block storage support to Converter [#1508]
 - Remove deprecated legacy extension API [#1464]
+- Move ndarray to a converter, add ``convert_unknown_ndarray_subclasses``
+  to ``asdf.config.AsdfConfig``, move ``asdf.Stream`` to
+  ``asdf.tags.core.Stream``, update internal block API [#1537]
 
 2.15.0 (2023-03-28)
 -------------------
