@@ -37,7 +37,8 @@ all = [
   "lz4>=0.10",
 ]
 docs = [
-  "sphinx-asdf>=0.1.4",
+  #"sphinx-asdf>=0.1.4",
+  'sphinx-asdf @ git+http://github.com/braingram/sphinx-asdf.git@immutable_block_manager',
   'tomli; python_version < "3.11"',
 ]
 tests = [
