@@ -6,7 +6,7 @@ import numpy as np
 import yaml
 
 from . import config, schema, tagged, treeutil, util
-from ._serialization_context import _Deserialization, _Serialization
+from ._serialization_context import BlockAccess
 from .constants import STSCI_SCHEMA_TAG_BASE, YAML_TAG_PREFIX
 from .exceptions import AsdfConversionWarning
 from .tags.core import AsdfObject
@@ -216,18 +216,16 @@ def custom_tree_to_tagged_tree(tree, ctx, _serialization_context=None):
     annotated with tags.
     """
     if _serialization_context is None:
-        _serialization_context = ctx._create_serialization_context()
+        _serialization_context = ctx._create_serialization_context(BlockAccess.WRITE)
 
-    sctx = _Serialization(_serialization_context)
-
-    extension_manager = sctx.extension_manager
-    version_string = str(sctx.version)
+    extension_manager = _serialization_context.extension_manager
+    version_string = str(_serialization_context.version)
 
     def _convert_obj(obj, converter):
-        tag = converter.select_tag(obj, sctx)
-        sctx.assign_object(obj)
-        node = converter.to_yaml_tree(obj, tag, sctx)
-        sctx.assign_blocks()
+        tag = converter.select_tag(obj, _serialization_context)
+        _serialization_context.assign_object(obj)
+        node = converter.to_yaml_tree(obj, tag, _serialization_context)
+        _serialization_context.assign_blocks()
 
         if isinstance(node, GeneratorType):
             generator = node
@@ -246,7 +244,7 @@ def custom_tree_to_tagged_tree(tree, ctx, _serialization_context=None):
             msg = f"Converter returned illegal node type: {util.get_class_name(node)}"
             raise TypeError(msg)
 
-        sctx._mark_extension_used(converter.extension)
+        _serialization_context._mark_extension_used(converter.extension)
 
         yield tagged_node
         if generator is not None:
@@ -278,7 +276,7 @@ def custom_tree_to_tagged_tree(tree, ctx, _serialization_context=None):
         tag = ctx._type_index.from_custom_type(
             typ,
             version_string,
-            _serialization_context=sctx,
+            _serialization_context=_serialization_context,
         )
 
         if tag is not None:
@@ -305,10 +303,9 @@ def tagged_tree_to_custom_tree(tree, ctx, force_raw_types=False, _serialization_
     tags, to a tree containing custom data types.
     """
     if _serialization_context is None:
-        _serialization_context = ctx._create_serialization_context()
+        _serialization_context = ctx._create_serialization_context(BlockAccess.READ)
 
     extension_manager = _serialization_context.extension_manager
-    dctx = _Deserialization(_serialization_context)
 
     def _walker(node):
         if force_raw_types:
@@ -320,14 +317,14 @@ def tagged_tree_to_custom_tree(tree, ctx, force_raw_types=False, _serialization_
 
         if extension_manager.handles_tag(tag):
             converter = extension_manager.get_converter_for_tag(tag)
-            dctx.assign_object(None)
-            obj = converter.from_yaml_tree(node.data, tag, dctx)
-            dctx.assign_object(obj)
-            dctx.assign_blocks()
-            dctx._mark_extension_used(converter.extension)
+            _serialization_context.assign_object(None)
+            obj = converter.from_yaml_tree(node.data, tag, _serialization_context)
+            _serialization_context.assign_object(obj)
+            _serialization_context.assign_blocks()
+            _serialization_context._mark_extension_used(converter.extension)
             return obj
 
-        tag_type = ctx._type_index.from_yaml_tag(ctx, tag, _serialization_context=dctx)
+        tag_type = ctx._type_index.from_yaml_tag(ctx, tag, _serialization_context=_serialization_context)
         # This means the tag did not correspond to any type in our type index.
         if tag_type is None:
             if not ctx._ignore_unrecognized_tag:
