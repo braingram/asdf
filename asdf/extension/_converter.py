@@ -185,6 +185,10 @@ class ConverterProxy(Converter):
         self._tags = sorted(relevant_tags)
 
         self._types = []
+        if not len(self._tags) and not hasattr(delegate, "change_type"):
+            # the wrapped Converter supports no tags relevant to this extension
+            # and doesn't implement change_type so we don't need to process it's types
+            return
         for typ in delegate.types:
             if isinstance(typ, (str, type)):
                 self._types.append(typ)
@@ -237,6 +241,36 @@ class ConverterProxy(Converter):
             return self._tags[0]
 
         return method(obj, self._tags, ctx)
+
+    def can_change_type(self):
+        """
+        Check if the proxied converter supports change_type
+
+        Returns
+        -------
+        supports_change_type : bool
+            True if the proxied converter supports change_type
+        """
+        return hasattr(self._delegate, "change_type")
+
+    def change_type(self, obj, ctx):
+        """
+        Change obj to a different type before converting (with a
+        different converter that handles to new type).
+
+        Parameter
+        ---------
+        obj : object
+            Instance of the custom type being convertered.
+        ctx : asdf.asdf.SerializationContext
+            Serialization parameters.
+
+        Returns
+        -------
+        converted_obj : object
+            Input object, obj, converted to a new type.
+        """
+        return self._delegate.change_type(obj, ctx)
 
     def to_yaml_tree(self, obj, tag, ctx):
         """

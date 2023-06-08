@@ -472,7 +472,7 @@ class AsdfFile:
         In many cases, it is automatically determined from the file
         handle used to read or write the file.
         """
-        return self._blocks._uri
+        return self._blocks.uri
 
     @property
     def _tag_to_schema_resolver(self):

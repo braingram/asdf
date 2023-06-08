@@ -222,8 +222,26 @@ def custom_tree_to_tagged_tree(tree, ctx, _serialization_context=None):
     version_string = str(_serialization_context.version)
 
     def _convert_obj(obj, converter):
-        tag = converter.select_tag(obj, _serialization_context)
+        # handle converters that simply convert from one type to another
+        # until we get a converter to use for to_yaml_tree
+        if converter.can_change_type():
+            # keep track of used converter to detect conversion cycles
+            converters = set()
+            while converter.can_change_type():
+                converters.add(converter)
+                obj = converter.change_type(obj, _serialization_context)
+                try:
+                    converter = extension_manager.get_converter_for_type(type(obj))
+                except KeyError:
+                    # if we have no new converter for this object, yield
+                    yield obj
+                    return
+                if converter in converters:
+                    msg = "Conversion cycle detected"
+                    raise TypeError(msg)
+
         _serialization_context.assign_object(obj)
+        tag = converter.select_tag(obj, _serialization_context)
         node = converter.to_yaml_tree(obj, tag, _serialization_context)
         _serialization_context.assign_blocks()
 

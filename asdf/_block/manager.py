@@ -313,6 +313,14 @@ class Manager:
         self.options = OptionsStore(self.blocks)
 
     @property
+    def uri(self):
+        if self._uri is not None:
+            return self._uri
+        if self._write_fd is not None:
+            return self._write_fd.uri
+        return None
+
+    @property
     def blocks(self):
         """
         Get any ReadBlocks that were read from an ASDF file
