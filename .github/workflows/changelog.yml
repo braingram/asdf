@@ -21,6 +21,7 @@ jobs:
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
+          submodules: true
       - name: Grep for PR number in CHANGES.rst
         run: grep -P '\[[^\]]*#${{github.event.number}}[,\]]' CHANGES.rst
         if: ${{ !contains(github.event.pull_request.labels.*.name, 'no-changelog-entry-needed') }}
