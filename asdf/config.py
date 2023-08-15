@@ -23,6 +23,7 @@ DEFAULT_ARRAY_INLINE_THRESHOLD = None
 DEFAULT_ALL_ARRAY_STORAGE = None
 DEFAULT_ALL_ARRAY_COMPRESSION = "input"
 DEFAULT_ALL_ARRAY_COMPRESSION_KWARGS = None
+DEFAULT_ALLOW_TAG_VERSION_MISMATCH = False
 
 
 class AsdfConfig:
@@ -44,6 +45,7 @@ class AsdfConfig:
         self._all_array_storage = DEFAULT_ALL_ARRAY_STORAGE
         self._all_array_compression = DEFAULT_ALL_ARRAY_COMPRESSION
         self._all_array_compression_kwargs = DEFAULT_ALL_ARRAY_COMPRESSION_KWARGS
+        self._allow_tag_version_mismatch = DEFAULT_ALLOW_TAG_VERSION_MISMATCH
 
         self._lock = threading.RLock()
 
@@ -412,6 +414,39 @@ class AsdfConfig:
         value : bool
         """
         self._validate_on_read = value
+
+    @property
+    def allow_tag_version_mismatch(self):
+        """
+        Get configuration that controls if reading a file
+        with a supported tag which is of an incompatible version
+        should be deserialized using the newest support converter
+        for that tag name.
+
+        Returns
+        -------
+        bool
+        """
+        return self._allow_tag_version_mismatch
+
+    @allow_tag_version_mismatch.setter
+    def allow_tag_version_mismatch(self, value):
+        """
+        Set configuration that controls if reading a file
+        with a supported tag which is of an incompatible version
+        should be deserialized using the newest support converter
+        for that tag name.
+
+        If `True` encountering a tag with a version that does not
+        match a supported version will result in a warning and
+        an attempt to convert that tag with the converter that supports
+        the newest version of that tag.
+
+        Parameters
+        ----------
+        value : bool
+        """
+        self._allow_tag_version_mismatch = value
 
     def __repr__(self):
         return (

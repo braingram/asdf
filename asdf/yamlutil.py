@@ -7,7 +7,7 @@ import yaml
 
 from . import schema, tagged, treeutil, util
 from .constants import STSCI_SCHEMA_TAG_BASE, YAML_TAG_PREFIX
-from .exceptions import AsdfConversionWarning
+from .exceptions import AsdfConversionWarning, AsdfTagVersionMismatchWarning
 from .tags.core import AsdfObject
 from .versioning import _yaml_base_loader, split_tag_version
 
@@ -290,7 +290,7 @@ def custom_tree_to_tagged_tree(tree, ctx, _serialization_context=None):
     )
 
 
-def tagged_tree_to_custom_tree(tree, ctx, force_raw_types=False, _serialization_context=None):
+def tagged_tree_to_custom_tree(tree, ctx, force_raw_types=False, _serialization_context=None, allow_tag_version_mismatch=False):
     """
     Convert a tree containing only basic data types, annotated with
     tags, to a tree containing custom data types.
@@ -317,6 +317,22 @@ def tagged_tree_to_custom_tree(tree, ctx, force_raw_types=False, _serialization_
         tag_type = ctx._type_index.from_yaml_tag(ctx, tag, _serialization_context=_serialization_context)
         # This means the tag did not correspond to any type in our type index.
         if tag_type is None:
+            if allow_tag_version_mismatch:
+                # try to find a converter that matches the tag name (not version)
+                try:
+                    converter, supported_version = extension_manager.get_converter_for_tag_name(tag)
+                except KeyError:
+                    converter = None
+                if converter:
+                    try:
+                        obj = converter.from_yaml_tree(node.data, tag, _serialization_context)
+                        _serialization_context._mark_extension_used(converter.extension)
+                        msg = f"Tag {tag} converted with converter for {supported_version}"
+                        warnings.warn(msg, AsdfTagVersionMismatchWarning)
+                        return obj
+                    except Exception as e:
+                        msg = f"Attempt to convert node with incompatible version{tag} failed with {e}"
+                        warnings.warn(msg, AsdfTagVersionMismatchWarning)
             if not ctx._ignore_unrecognized_tag:
                 warnings.warn(
                     f"{tag} is not recognized, converting to raw Python data structure",

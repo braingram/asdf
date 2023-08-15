@@ -1,10 +1,11 @@
 import pytest
 from packaging.specifiers import SpecifierSet
 
+import asdf
 from asdf import AsdfFile, config_context
 from asdf._tests._helpers import assert_extension_correctness
 from asdf._types import CustomType
-from asdf.exceptions import AsdfDeprecationWarning, ValidationError
+from asdf.exceptions import AsdfConversionWarning, AsdfDeprecationWarning, AsdfTagVersionMismatchWarning, ValidationError
 from asdf.extension import (
     Compressor,
     Converter,
@@ -18,7 +19,7 @@ from asdf.extension import (
     get_cached_extension_manager,
 )
 from asdf.extension._legacy import BuiltinExtension, _AsdfExtension, get_cached_asdf_extension_list
-from asdf.testing.helpers import roundtrip_object
+from asdf.testing.helpers import roundtrip_object, yaml_to_asdf
 
 
 def test_builtin_extension():
@@ -42,15 +43,15 @@ class LegacyExtension:
 
 
 class MinimumExtension:
-    extension_uri = "asdf://somewhere.org/extensions/minimum-1.0"
+    extension_uri = "asdf://somewhere.org/extensions/minimum-1.0.0"
 
 
 class MinimumExtensionSubclassed(Extension):
-    extension_uri = "asdf://somewhere.org/extensions/minimum-1.0"
+    extension_uri = "asdf://somewhere.org/extensions/minimum-1.0.0"
 
 
 class FullExtension:
-    extension_uri = "asdf://somewhere.org/extensions/full-1.0"
+    extension_uri = "asdf://somewhere.org/extensions/full-1.0.0"
 
     def __init__(
         self,
@@ -175,7 +176,7 @@ def test_extension_proxy():
     assert isinstance(proxy, Extension)
     assert isinstance(proxy, _AsdfExtension)
 
-    assert proxy.extension_uri == "asdf://somewhere.org/extensions/minimum-1.0"
+    assert proxy.extension_uri == "asdf://somewhere.org/extensions/minimum-1.0.0"
     assert proxy.legacy_class_names == set()
     assert proxy.asdf_standard_requirement == SpecifierSet()
     assert proxy.converters == []
@@ -219,19 +220,19 @@ def test_extension_proxy():
         compressors=compressors,
         validators=validators,
         asdf_standard_requirement=">=1.4.0",
-        tags=["asdf://somewhere.org/extensions/full/tags/foo-1.0"],
+        tags=["asdf://somewhere.org/extensions/full/tags/foo-1.0.0"],
         legacy_class_names=["foo.extensions.SomeOldExtensionClass"],
     )
     proxy = ExtensionProxy(extension, package_name="foo", package_version="1.2.3")
 
-    assert proxy.extension_uri == "asdf://somewhere.org/extensions/full-1.0"
+    assert proxy.extension_uri == "asdf://somewhere.org/extensions/full-1.0.0"
     assert proxy.legacy_class_names == {"foo.extensions.SomeOldExtensionClass"}
     assert proxy.asdf_standard_requirement == SpecifierSet(">=1.4.0")
     assert proxy.converters == [ConverterProxy(c, proxy) for c in converters]
     assert proxy.compressors == compressors
     assert proxy.validators == validators
     assert len(proxy.tags) == 1
-    assert proxy.tags[0].tag_uri == "asdf://somewhere.org/extensions/full/tags/foo-1.0"
+    assert proxy.tags[0].tag_uri == "asdf://somewhere.org/extensions/full/tags/foo-1.0.0"
     assert proxy.types == []
     assert proxy.tag_mapping == []
     assert proxy.url_mapping == []
@@ -278,18 +279,18 @@ def test_extension_proxy_tags():
     """
     The tags behavior is a tad complex, so they get their own test.
     """
-    foo_tag_uri = "asdf://somewhere.org/extensions/full/tags/foo-1.0"
+    foo_tag_uri = "asdf://somewhere.org/extensions/full/tags/foo-1.0.0"
     foo_tag_def = TagDefinition(
         foo_tag_uri,
-        schema_uris="asdf://somewhere.org/extensions/full/schemas/foo-1.0",
+        schema_uris="asdf://somewhere.org/extensions/full/schemas/foo-1.0.0",
         title="Some tag title",
         description="Some tag description",
     )
 
-    bar_tag_uri = "asdf://somewhere.org/extensions/full/tags/bar-1.0"
+    bar_tag_uri = "asdf://somewhere.org/extensions/full/tags/bar-1.0.0"
     bar_tag_def = TagDefinition(
         bar_tag_uri,
-        schema_uris="asdf://somewhere.org/extensions/full/schemas/bar-1.0",
+        schema_uris="asdf://somewhere.org/extensions/full/schemas/bar-1.0.0",
         title="Some other tag title",
         description="Some other tag description",
     )
@@ -303,14 +304,14 @@ def test_extension_proxy_tags():
 
     # The converter should not return tags that
     # its patterns do not match.
-    converter = FullConverter(tags=["**/foo-1.0"])
+    converter = FullConverter(tags=["**/foo-1.0.0"])
     extension = FullExtension(tags=[foo_tag_def, bar_tag_def], converters=[converter])
     proxy = ExtensionProxy(extension)
     assert proxy.converters[0].tags == [foo_tag_uri]
 
     # The process should still work if the extension property
     # contains str instead of TagDescription.
-    converter = FullConverter(tags=["**/foo-1.0"])
+    converter = FullConverter(tags=["**/foo-1.0.0"])
     extension = FullExtension(tags=[foo_tag_uri, bar_tag_uri], converters=[converter])
     proxy = ExtensionProxy(extension)
     assert proxy.converters[0].tags == [foo_tag_uri]
@@ -392,14 +393,14 @@ def test_extension_manager():
     extension1 = FullExtension(
         converters=[converter1, converter2],
         tags=[
-            "asdf://somewhere.org/extensions/full/tags/foo-1.0",
-            "asdf://somewhere.org/extensions/full/tags/baz-1.0",
+            "asdf://somewhere.org/extensions/full/tags/foo-1.0.0",
+            "asdf://somewhere.org/extensions/full/tags/baz-1.0.0",
         ],
     )
     extension2 = FullExtension(
         converters=[converter3],
         tags=[
-            "asdf://somewhere.org/extensions/full/tags/foo-1.0",
+            "asdf://somewhere.org/extensions/full/tags/foo-1.0.0",
         ],
     )
 
@@ -407,9 +408,9 @@ def test_extension_manager():
 
     assert manager.extensions == [ExtensionProxy(extension1), ExtensionProxy(extension2)]
 
-    assert manager.handles_tag("asdf://somewhere.org/extensions/full/tags/foo-1.0") is True
-    assert manager.handles_tag("asdf://somewhere.org/extensions/full/tags/bar-1.0") is False
-    assert manager.handles_tag("asdf://somewhere.org/extensions/full/tags/baz-1.0") is True
+    assert manager.handles_tag("asdf://somewhere.org/extensions/full/tags/foo-1.0.0") is True
+    assert manager.handles_tag("asdf://somewhere.org/extensions/full/tags/bar-1.0.0") is False
+    assert manager.handles_tag("asdf://somewhere.org/extensions/full/tags/baz-1.0.0") is True
 
     assert manager.handles_type(FooType) is True
     # This should return True even though BarType was listed
@@ -418,20 +419,20 @@ def test_extension_manager():
     assert manager.handles_type(BazType) is True
 
     assert (
-        manager.get_tag_definition("asdf://somewhere.org/extensions/full/tags/foo-1.0").tag_uri
-        == "asdf://somewhere.org/extensions/full/tags/foo-1.0"
+        manager.get_tag_definition("asdf://somewhere.org/extensions/full/tags/foo-1.0.0").tag_uri
+        == "asdf://somewhere.org/extensions/full/tags/foo-1.0.0"
     )
     assert (
-        manager.get_tag_definition("asdf://somewhere.org/extensions/full/tags/baz-1.0").tag_uri
-        == "asdf://somewhere.org/extensions/full/tags/baz-1.0"
+        manager.get_tag_definition("asdf://somewhere.org/extensions/full/tags/baz-1.0.0").tag_uri
+        == "asdf://somewhere.org/extensions/full/tags/baz-1.0.0"
     )
     with pytest.raises(KeyError, match=r"No support available for YAML tag.*"):
-        manager.get_tag_definition("asdf://somewhere.org/extensions/full/tags/bar-1.0")
+        manager.get_tag_definition("asdf://somewhere.org/extensions/full/tags/bar-1.0.0")
 
-    assert manager.get_converter_for_tag("asdf://somewhere.org/extensions/full/tags/foo-1.0").delegate is converter1
-    assert manager.get_converter_for_tag("asdf://somewhere.org/extensions/full/tags/baz-1.0").delegate is converter2
+    assert manager.get_converter_for_tag("asdf://somewhere.org/extensions/full/tags/foo-1.0.0").delegate is converter1
+    assert manager.get_converter_for_tag("asdf://somewhere.org/extensions/full/tags/baz-1.0.0").delegate is converter2
     with pytest.raises(KeyError, match=r"No support available for YAML tag.*"):
-        manager.get_converter_for_tag("asdf://somewhere.org/extensions/full/tags/bar-1.0")
+        manager.get_converter_for_tag("asdf://somewhere.org/extensions/full/tags/bar-1.0.0")
 
     assert manager.get_converter_for_type(FooType).delegate is converter1
     assert manager.get_converter_for_type(BarType).delegate is converter1
@@ -449,32 +450,32 @@ def test_get_cached_extension_manager():
 
 def test_tag_definition():
     tag_def = TagDefinition(
-        "asdf://somewhere.org/extensions/foo/tags/foo-1.0",
-        schema_uris="asdf://somewhere.org/extensions/foo/schemas/foo-1.0",
+        "asdf://somewhere.org/extensions/foo/tags/foo-1.0.0",
+        schema_uris="asdf://somewhere.org/extensions/foo/schemas/foo-1.0.0",
         title="Some title",
         description="Some description",
     )
 
-    assert tag_def.tag_uri == "asdf://somewhere.org/extensions/foo/tags/foo-1.0"
-    assert tag_def.schema_uris == ["asdf://somewhere.org/extensions/foo/schemas/foo-1.0"]
+    assert tag_def.tag_uri == "asdf://somewhere.org/extensions/foo/tags/foo-1.0.0"
+    assert tag_def.schema_uris == ["asdf://somewhere.org/extensions/foo/schemas/foo-1.0.0"]
     assert tag_def.title == "Some title"
     assert tag_def.description == "Some description"
 
-    assert "URI: asdf://somewhere.org/extensions/foo/tags/foo-1.0" in repr(tag_def)
+    assert "URI: asdf://somewhere.org/extensions/foo/tags/foo-1.0.0" in repr(tag_def)
 
     tag_def = TagDefinition(
-        "asdf://somewhere.org/extensions/foo/tags/foo-1.0",
+        "asdf://somewhere.org/extensions/foo/tags/foo-1.0.0",
         schema_uris=[
-            "asdf://somewhere.org/extensions/foo/schemas/foo-1.0",
-            "asdf://somewhere.org/extensions/foo/schemas/base-1.0",
+            "asdf://somewhere.org/extensions/foo/schemas/foo-1.0.0",
+            "asdf://somewhere.org/extensions/foo/schemas/base-1.0.0",
         ],
         title="Some title",
         description="Some description",
     )
 
     assert tag_def.schema_uris == [
-        "asdf://somewhere.org/extensions/foo/schemas/foo-1.0",
-        "asdf://somewhere.org/extensions/foo/schemas/base-1.0",
+        "asdf://somewhere.org/extensions/foo/schemas/foo-1.0.0",
+        "asdf://somewhere.org/extensions/foo/schemas/base-1.0.0",
     ]
 
     with pytest.raises(ValueError, match=r"URI patterns are not permitted in TagDefinition"):
@@ -550,14 +551,14 @@ def test_converter_proxy():
     extension = FullExtension(
         tags=[
             TagDefinition(
-                "asdf://somewhere.org/extensions/test/tags/foo-1.0",
-                schema_uris="asdf://somewhere.org/extensions/test/schemas/foo-1.0",
+                "asdf://somewhere.org/extensions/test/tags/foo-1.0.0",
+                schema_uris="asdf://somewhere.org/extensions/test/schemas/foo-1.0.0",
                 title="Foo tag title",
                 description="Foo tag description",
             ),
             TagDefinition(
-                "asdf://somewhere.org/extensions/test/tags/bar-1.0",
-                schema_uris="asdf://somewhere.org/extensions/test/schemas/bar-1.0",
+                "asdf://somewhere.org/extensions/test/tags/bar-1.0.0",
+                schema_uris="asdf://somewhere.org/extensions/test/schemas/bar-1.0.0",
                 title="Bar tag title",
                 description="Bar tag description",
             ),
@@ -567,8 +568,8 @@ def test_converter_proxy():
     extension_proxy = ExtensionProxy(extension, package_name="foo", package_version="1.2.3")
     proxy = ConverterProxy(converter, extension_proxy)
     assert len(proxy.tags) == 2
-    assert "asdf://somewhere.org/extensions/test/tags/foo-1.0" in proxy.tags
-    assert "asdf://somewhere.org/extensions/test/tags/bar-1.0" in proxy.tags
+    assert "asdf://somewhere.org/extensions/test/tags/foo-1.0.0" in proxy.tags
+    assert "asdf://somewhere.org/extensions/test/tags/bar-1.0.0" in proxy.tags
     assert proxy.types == [FooType, BarType]
     assert proxy.to_yaml_tree(None, None, None) == "to_yaml_tree result"
     assert proxy.from_yaml_tree(None, None, None) == "from_yaml_tree result"
@@ -784,7 +785,7 @@ def test_converter_deferral():
             raise NotImplementedError()
 
     class BarConverter:
-        tags = ["asdf://somewhere.org/tags/bar"]
+        tags = ["asdf://somewhere.org/tags/bar-1.0.0"]
         types = [Bar]
 
         def to_yaml_tree(self, obj, tag, ctx):
@@ -885,3 +886,62 @@ def test_converter_loop():
             obj = typ(42)
             with pytest.raises(TypeError, match=r"Conversion cycle detected"):
                 roundtrip_object(obj)
+
+
+@pytest.mark.parametrize("fuzzy_match", [True, False], ids=["fuzzy", "exact"])
+@pytest.mark.parametrize("supported_version", [None, "2.1.1"])
+@pytest.mark.parametrize("read_version", ["2.1.1", "2.1.0", "2.0.1", "1.1.1", "2.1.2", "2.2.1", "3.2.2"])
+def test_tag_version_mismatch(supported_version, read_version, fuzzy_match):
+    class Foo:
+        pass
+
+    tag_base = "asdf://somewhere.org/tags/foo"
+    if supported_version is not None:
+        supported_tag = f"{tag_base}-{supported_version}"
+        class FooConverter:
+            tags = [supported_tag]
+            types = [Foo]
+
+            def select_tag(self, *args):
+                return None
+
+            def to_yaml_tree(self, obj, tag, ctx):
+                return "this_is_a_foo"
+
+            def from_yaml_tree(self, node, tag, ctx):
+                return Foo()
+
+        extension = FullExtension(converters=[FooConverter()], tags=[supported_tag])
+    else:
+        extension = None
+
+    input_yaml = f"foo: !<{tag_base}-{read_version}>"
+
+    with config_context() as config:
+        if extension is not None:
+            config.add_extension(extension)
+        if fuzzy_match:
+            config.allow_tag_version_mismatch = True
+        bio = yaml_to_asdf(input_yaml)
+        if not fuzzy_match:
+            if supported_version == read_version:
+                # no warnings
+                af = asdf.open(bio)
+            else:
+                with pytest.warns(AsdfConversionWarning, match=".*is not recognized.*"):
+                    af = asdf.open(bio)
+        else:
+            if supported_version == read_version:
+                # no warnings
+                af = asdf.open(bio)
+            elif supported_version is None:
+                with pytest.warns(AsdfConversionWarning, match=".*is not recognized.*"):
+                    af = asdf.open(bio)
+            else:
+                with pytest.warns(AsdfTagVersionMismatchWarning):
+                    af = asdf.open(bio)
+
+    # to test
+    # read version    = None, same, < patch, < minor, < major, > minor, > minor, > major
+    # default outcome = Err , Pass, Err...
+    # with fuzzy      = Err , Pass, Warn...

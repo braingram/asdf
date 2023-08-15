@@ -6,7 +6,7 @@ import pytest
 import asdf
 from asdf.extension import TagDefinition
 
-FOO_SCHEMA_URI = "asdf://somewhere.org/extensions/foo/schemas/foo-1.0"
+FOO_SCHEMA_URI = "asdf://somewhere.org/extensions/foo/schemas/foo-1.0.0"
 FOO_SCHEMA = f"""
 id: {FOO_SCHEMA_URI}
 type: object
@@ -38,11 +38,11 @@ class FooConverter:
 
 
 class FooExtension:
-    extension_uri = "asdf://somewhere.org/extensions/foo-1.0"
+    extension_uri = "asdf://somewhere.org/extensions/foo-1.0.0"
     converters = [FooConverter()]
     tags = [
         TagDefinition(
-            "asdf://somewhere.org/extensions/foo/tags/foo-1.0",
+            "asdf://somewhere.org/extensions/foo/tags/foo-1.0.0",
             schema_uris=FOO_SCHEMA_URI,
         ),
     ]
@@ -67,7 +67,7 @@ def test_serialize_custom_type(tmp_path):
             af.write_to(path)
 
 
-FOOFOO_SCHEMA_URI = "asdf://somewhere.org/extensions/foo/schemas/foo_foo-1.0"
+FOOFOO_SCHEMA_URI = "asdf://somewhere.org/extensions/foo/schemas/foo_foo-1.0.0"
 FOOFOO_SCHEMA = f"""
 id: {FOOFOO_SCHEMA_URI}
 type: object
@@ -101,11 +101,11 @@ class FooFooConverter:
 
 
 class FooFooExtension:
-    extension_uri = "asdf://somewhere.org/extensions/foo_foo-1.0"
+    extension_uri = "asdf://somewhere.org/extensions/foo_foo-1.0.0"
     converters = [FooFooConverter()]
     tags = [
         TagDefinition(
-            "asdf://somewhere.org/extensions/foo/tags/foo_foo-1.0",
+            "asdf://somewhere.org/extensions/foo/tags/foo_foo-1.0.0",
             schema_uris=[FOO_SCHEMA_URI, FOOFOO_SCHEMA_URI],
         ),
     ]
@@ -136,11 +136,11 @@ def test_serialize_with_multiple_schemas(tmp_path):
 
 
 class FooFooConverterlessExtension:
-    extension_uri = "asdf://somewhere.org/extensions/foo_foo-1.0"
+    extension_uri = "asdf://somewhere.org/extensions/foo_foo-1.0.0"
     converters = []
     tags = [
         TagDefinition(
-            "asdf://somewhere.org/extensions/foo/tags/foo_foo-1.0",
+            "asdf://somewhere.org/extensions/foo/tags/foo_foo-1.0.0",
             schema_uris=[FOO_SCHEMA_URI, FOOFOO_SCHEMA_URI],
         ),
     ]
@@ -154,7 +154,7 @@ def test_converterless_serialize_with_multiple_schemas(tmp_path):
         path = str(tmp_path / "test.asdf")
 
         af = asdf.AsdfFile()
-        af["foo_foo"] = "asdf://somewhere.org/extensions/foo/tags/foo_foo-1.0 {bar: bar_bar}"
+        af["foo_foo"] = "asdf://somewhere.org/extensions/foo/tags/foo_foo-1.0.0 {bar: bar_bar}"
         af.write_to(path)
 
         with asdf.open(path) as af2:

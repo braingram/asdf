@@ -878,14 +878,16 @@ class AsdfFile:
             if self.version <= versioning.FILL_DEFAULTS_MAX_VERSION and get_config().legacy_fill_schema_defaults:
                 schema.fill_defaults(tree, self, reading=True)
 
-            if get_config().validate_on_read:
+            cfg = get_config()
+            if cfg.validate_on_read:
                 try:
                     self._validate(tree, reading=True)
                 except ValidationError:
                     self.close()
                     raise
 
-            tree = yamlutil.tagged_tree_to_custom_tree(tree, self, _force_raw_types)
+            allow_tag_version_mismatch = cfg.allow_tag_version_mismatch
+            tree = yamlutil.tagged_tree_to_custom_tree(tree, self, _force_raw_types, allow_tag_version_mismatch=allow_tag_version_mismatch)
 
             if not (ignore_missing_extensions or _force_raw_types):
                 self._check_extensions(tree, strict=strict_extension_check)

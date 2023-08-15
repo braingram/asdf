@@ -2,6 +2,7 @@ from functools import lru_cache
 
 from asdf.tagged import Tagged
 from asdf.util import get_class_name, uri_match
+from asdf.versioning import split_tag_version
 
 from ._extension import ExtensionProxy
 
@@ -23,6 +24,7 @@ class ExtensionManager:
 
         self._tag_defs_by_tag = {}
         self._converters_by_tag = {}
+        self._newest_converters_by_tag_name = {}
         # This dict has both str and type keys:
         self._converters_by_type = {}
 
@@ -36,6 +38,13 @@ class ExtensionManager:
                 for tag in converter.tags:
                     if tag not in self._converters_by_tag:
                         self._converters_by_tag[tag] = converter
+                    tag_name, tag_version = split_tag_version(tag)
+                    if tag_name in self._newest_converters_by_tag_name:
+                        other_version, _ = self._newest_converters_by_tag_name[tag_name]
+                        if tag_version > other_version:
+                            self._newest_converters_by_tag_name[tag_name] = (tag_version, converter)
+                    else:
+                        self._newest_converters_by_tag_name[tag_name] = (tag_version, converter)
                 for typ in converter.types:
                     if isinstance(typ, str):
                         if typ not in self._converters_by_type:
@@ -151,6 +160,33 @@ class ExtensionManager:
         """
         try:
             return self._converters_by_tag[tag]
+        except KeyError:
+            msg = f"No support available for YAML tag '{tag}'.  You may need to install a missing extension."
+            raise KeyError(msg) from None
+
+    def get_converter_for_tag_name(self, tag):
+        """
+        Get the converter for the specified tag using only the tag
+        name. The converter for the newest version of this tag will
+        be returned.
+
+        Parameters
+        ----------
+        tag : str
+            Tag URI. Only the name portion will be used.
+
+        Returns
+        -------
+        asdf.extension.Converter
+
+        Raises
+        ------
+        KeyError
+            Unrecognized tag URI.
+        """
+        tag_name = split_tag_version(tag)[0]
+        try:
+            return self._newest_converters_by_tag_name[tag_name]
         except KeyError:
             msg = f"No support available for YAML tag '{tag}'.  You may need to install a missing extension."
             raise KeyError(msg) from None

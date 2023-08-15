@@ -4,6 +4,7 @@ __all__ = [
     "AsdfConversionWarning",
     "AsdfDeprecationWarning",
     "AsdfProvisionalAPIWarning",
+    "AsdfTagVersionMismatchWarning",
     "AsdfWarning",
     "DelimiterNotFoundError",
     "ValidationError",
@@ -25,6 +26,13 @@ class AsdfDeprecationWarning(AsdfWarning, DeprecationWarning):
 class AsdfConversionWarning(AsdfWarning):
     """
     Warning class used for failures to convert data into custom types.
+    """
+
+class AsdfTagVersionMismatchWarning(AsdfWarning):
+    """
+    Warning class used when reading a file with 'fuzzy' tag matching
+    and an object is read with a tag version that does not exactly match
+    the version of the supported tag.
     """
 
 
