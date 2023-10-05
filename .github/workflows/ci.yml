@@ -82,7 +82,6 @@ jobs:
         - linux: py310-devdeps-parallel
         - linux: py311-devdeps-parallel
         - linux: py312-devdeps-parallel
-          python-version: '3.12-dev'
 
   oldest:
     needs: [core, asdf-schemas]
