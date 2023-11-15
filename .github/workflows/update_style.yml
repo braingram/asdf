@@ -1,0 +1,48 @@
+name: Pre-commit auto-update
+
+on:
+  # Allow manual runs through the web UI
+  workflow_dispatch:
+  schedule:
+    #        ┌───────── minute (0 - 59)
+    #        │ ┌───────── hour (0 - 23)
+    #        │ │ ┌───────── day of the month (1 - 31)
+    #        │ │ │ ┌───────── month (1 - 12 or JAN-DEC)
+    #        │ │ │ │ ┌───────── day of the week (0 - 6 or SUN-SAT)
+    - cron: '0 6 * * 1'  # Every Monday at 6am UTC
+
+permissions:
+  contents: read
+
+jobs:
+  auto-update:
+    permissions:
+      contents: write  # for peter-evans/create-pull-request to create branch
+      pull-requests: write  # for peter-evans/create-pull-request to create a PR
+
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: true
+
+      - uses: actions/setup-python@v4
+        with:
+          python-version: 3.x
+
+      - run: pip install pre-commit
+        shell: bash
+
+      - run: pre-commit autoupdate
+        shell: bash
+
+      - run: pre-commit run --all-files
+        shell: bash
+
+      - uses: peter-evans/create-pull-request@v5
+        with:
+          branch: update/pre-commit-hooks
+          title: Update pre-commit hooks
+          commit-message: "chore: update pre-commit hooks"
+          body: Update versions of pre-commit hooks to latest version.
