@@ -4,7 +4,7 @@ Utility functions for managing tree-like data structures.
 
 import warnings
 
-from . import _itertree, tagged
+from . import _itertree, _lazy_nodes, tagged
 from .exceptions import AsdfDeprecationWarning, AsdfWarning
 
 __all__ = ["walk", "iter_tree", "walk_and_modify", "get_children", "is_container", "PendingValue", "RemoveNode"]
@@ -100,6 +100,10 @@ def _container_factory(obj):
     elif isinstance(obj, tagged.TaggedList):
         result = tagged.TaggedList([None] * len(obj))
         result._tag = obj._tag
+    elif isinstance(obj, _lazy_nodes.AsdfDictNode):
+        result = {k: None for k in obj}
+    elif isinstance(obj, _lazy_nodes.AsdfListNode):
+        result = [None] * len(obj)
     elif isinstance(obj, dict):
         result = obj.__class__({k: None for k in obj})
     elif isinstance(obj, list):
