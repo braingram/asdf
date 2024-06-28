@@ -143,9 +143,8 @@ class NDArrayConverter(Converter):
         if isinstance(node, list):
             instance = NDArrayType(node, None, None, None, None, None, None)
             ctx._blocks._set_array_storage(instance, "inline")
-            return instance
 
-        if isinstance(node, dict):
+        elif isinstance(node, dict):
             shape = node.get("shape", None)
             if "source" in node and "data" in node:
                 msg = "Both source and data may not be provided at the same time"
@@ -183,10 +182,9 @@ class NDArrayConverter(Converter):
                 # inline
                 instance = NDArrayType(source, shape, dtype, offset, strides, "A", mask)
                 ctx._blocks._set_array_storage(instance, "inline")
-
-            if not ctx._blocks._lazy_load:
-                instance._make_array()
-            return instance
-
-        msg = "Invalid ndarray description."
-        raise TypeError(msg)
+        else:
+            msg = "Invalid ndarray description."
+            raise TypeError(msg)
+        if not ctx._blocks._lazy_load:
+            return instance._make_array()
+        return instance
