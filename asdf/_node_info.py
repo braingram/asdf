@@ -20,7 +20,7 @@ def _filter_tree(info, filters):
     return len(info.children) > 0 or all(f(info.node, info.identifier) for f in filters)
 
 
-def create_tree(key, node, identifier="root", filters=None, refresh_extension_manager=False):
+def create_tree(key, node, identifier="root", filters=None):
     """
     Create a `NodeSchemaInfo` tree which can be filtered from a base node.
 
@@ -34,10 +34,6 @@ def create_tree(key, node, identifier="root", filters=None, refresh_extension_ma
         A list of functions that take a node and identifier and return True if the node should be included in the tree.
     preserve_list : bool
         If True, then lists are preserved. Otherwise, they are turned into dicts.
-    refresh_extension_manager : bool
-        If `True`, refresh the extension manager before looking up the
-        key.  This is useful if you want to make sure that the schema
-        data for a given key is up to date.
     """
     filters = [] if filters is None else filters
 
@@ -45,7 +41,6 @@ def create_tree(key, node, identifier="root", filters=None, refresh_extension_ma
         key,
         identifier,
         node,
-        refresh_extension_manager=refresh_extension_manager,
     )
 
     if len(filters) > 0 and not _filter_tree(schema_info, filters):
@@ -61,7 +56,6 @@ def collect_schema_info(
     identifier="root",
     filters=None,
     preserve_list=True,
-    refresh_extension_manager=False,
 ):
     """
     Collect from the underlying schemas any of the info stored under key, relative to the path
@@ -79,10 +73,6 @@ def collect_schema_info(
         A list of functions that take a node and identifier and return True if the node should be included in the tree.
     preserve_list : bool
         If True, then lists are preserved. Otherwise, they are turned into dicts.
-    refresh_extension_manager : bool
-        If `True`, refresh the extension manager before looking up the
-        key.  This is useful if you want to make sure that the schema
-        data for a given key is up to date.
     """
 
     schema_info = create_tree(
@@ -90,7 +80,6 @@ def collect_schema_info(
         node,
         identifier=identifier,
         filters=[] if filters is None else filters,
-        refresh_extension_manager=refresh_extension_manager,
     )
 
     info = schema_info.collect_info(preserve_list=preserve_list)
@@ -105,14 +94,10 @@ def collect_schema_info(
     return info
 
 
-def _get_extension_manager(refresh_extension_manager):
-    from ._asdf import AsdfFile, get_config
-    from .extension import ExtensionManager
+def _get_extension_manager():
+    from ._asdf import AsdfFile
 
     af = AsdfFile()
-    if refresh_extension_manager:
-        config = get_config()
-        af._extension_manager = ExtensionManager(config.extensions)
 
     return af.extension_manager
 
@@ -254,13 +239,13 @@ class NodeSchemaInfo:
         self.schema = schema
 
     @classmethod
-    def from_root_node(cls, key, root_identifier, root_node, schema=None, refresh_extension_manager=False):
+    def from_root_node(cls, key, root_identifier, root_node, schema=None):
         """
         Build a NodeSchemaInfo tree from the given ASDF root node.
         Intentionally processes the tree in breadth-first order so that recursively
         referenced nodes are displayed at their shallowest reference point.
         """
-        extension_manager = _get_extension_manager(refresh_extension_manager)
+        extension_manager = _get_extension_manager()
 
         current_nodes = [(None, root_identifier, root_node)]
         seen = set()

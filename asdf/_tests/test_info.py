@@ -378,7 +378,7 @@ def test_schema_info_support(tmp_path):
     af._extension_manager = ExtensionManager(config.extensions)
     af.tree = create_tree()
 
-    assert af.schema_info("title", refresh_extension_manager=True) == {
+    assert af.schema_info("title") == {
         "list_of_stuff": [
             {
                 "attributeOne": {
@@ -419,7 +419,7 @@ def test_schema_info_support(tmp_path):
         },
     }
 
-    assert af.schema_info("archive_catalog", refresh_extension_manager=True) == {
+    assert af.schema_info("archive_catalog") == {
         "list_of_stuff": [
             {
                 "attributeOne": {
@@ -456,7 +456,7 @@ def test_schema_info_support(tmp_path):
         },
     }
 
-    assert af.schema_info("archive_catalog", preserve_list=False, refresh_extension_manager=True) == {
+    assert af.schema_info("archive_catalog", preserve_list=False) == {
         "list_of_stuff": {
             0: {
                 "attributeOne": {
@@ -493,7 +493,7 @@ def test_schema_info_support(tmp_path):
         },
     }
 
-    assert af.schema_info("title", "list_of_stuff", refresh_extension_manager=True) == [
+    assert af.schema_info("title", "list_of_stuff") == [
         {
             "attributeOne": {
                 "title": ("AttributeOne Title", "v1"),
@@ -514,7 +514,7 @@ def test_schema_info_support(tmp_path):
         },
     ]
 
-    assert af.schema_info("title", "object", refresh_extension_manager=True) == {
+    assert af.schema_info("title", "object") == {
         "I_example": {"title": ("integer pattern property", 1)},
         "S_example": {"title": ("string pattern property", "beep")},
         "allof_attribute": {"title": ("allOf example attribute", "good")},
@@ -533,7 +533,7 @@ def test_schema_info_support(tmp_path):
         "title": ("object with info support title", af.tree["object"]),
     }
 
-    assert af.schema_info("title", "object.anyof_attribute", refresh_extension_manager=True) == {
+    assert af.schema_info("title", "object.anyof_attribute") == {
         "attribute1": {
             "title": ("Attribute1 Title", "VAL1"),
         },
@@ -543,19 +543,16 @@ def test_schema_info_support(tmp_path):
         "title": ("object with info support 2 title", af.tree["object"].anyof),
     }
 
-    assert af.schema_info("title", "object.anyof_attribute.attribute2", refresh_extension_manager=True) == {
+    assert af.schema_info("title", "object.anyof_attribute.attribute2") == {
         "title": ("Attribute2 Title", "VAL2"),
     }
 
     # Test printing the schema_info
-    assert (
-        af.schema_info("title", "object.anyof_attribute.attribute2", refresh_extension_manager=True).__repr__()
-        == "{'title': Attribute2 Title}"
-    )
+    assert af.schema_info("title", "object.anyof_attribute.attribute2").__repr__() == "{'title': Attribute2 Title}"
 
-    assert af.schema_info("title", "object.anyof_attribute.attribute2.foo", refresh_extension_manager=True) is None
+    assert af.schema_info("title", "object.anyof_attribute.attribute2.foo") is None
 
-    assert af.schema_info(refresh_extension_manager=True) == {
+    assert af.schema_info() == {
         "list_of_stuff": [
             {
                 "attributeOne": {"description": ("AttributeOne description", "v1")},
@@ -587,7 +584,7 @@ def test_schema_info_support(tmp_path):
 
     # Test using a search result
     search = af.search("clown")
-    assert af.schema_info("description", search, refresh_extension_manager=True) == {
+    assert af.schema_info("description", search) == {
         "object": {
             "clown": {
                 "description": ("clown description", "Bozo"),
@@ -603,7 +600,7 @@ def test_info_object_support(capsys, tmp_path):
     af = asdf.AsdfFile()
     af._extension_manager = ExtensionManager(config.extensions)
     af.tree = create_tree()
-    af.info(refresh_extension_manager=True)
+    af.info()
 
     captured = capsys.readouterr()
 
@@ -655,7 +652,7 @@ def test_recursive_info_object_support(capsys, tmp_path):
     # and prior to switching to the default 1.6.0 was ignored
     # which allowed this test to pass.
     af._tree = tree
-    af.info(refresh_extension_manager=True)
+    af.info()
     captured = capsys.readouterr()
     assert "recursive reference" in captured.out
 
