@@ -8,7 +8,7 @@ import re
 import typing
 
 from ._display import DEFAULT_MAX_COLS, DEFAULT_MAX_ROWS, DEFAULT_SHOW_VALUES, format_faint, format_italic, render_tree
-from ._node_info import NodeSchemaInfo, collect_schema_info
+from ._node_info import _is_traversable, collect_schema_info
 from .treeutil import get_children, is_container
 from .util import NotSet
 
@@ -231,7 +231,7 @@ class AsdfSearchResult:
             if all(f(node, identifiers[-1]) for f in self._filters):
                 results.append((identifiers[-1], parent))
 
-        _walk_tree_breadth_first(self._identifiers, self._node, _callback)
+        _walk_tree_breadth_first(self._identifiers, self._node, self._extension_manager, _callback)
 
         for identifier, parent in results:
             parent[identifier] = value
@@ -293,7 +293,7 @@ class AsdfSearchResult:
             if all(f(node, identifiers[-1]) for f in self._filters):
                 results.append(node)
 
-        _walk_tree_breadth_first(self._identifiers, self._node, _callback)
+        _walk_tree_breadth_first(self._identifiers, self._node, self._extension_manager, _callback)
         return results
 
     @property
@@ -312,7 +312,7 @@ class AsdfSearchResult:
             if all(f(node, identifiers[-1]) for f in self._filters):
                 results.append(_build_path(identifiers))
 
-        _walk_tree_breadth_first(self._identifiers, self._node, _callback)
+        _walk_tree_breadth_first(self._identifiers, self._node, self._extension_manager, _callback)
         return results
 
     def __repr__(self):
@@ -354,8 +354,12 @@ class AsdfSearchResult:
         )
 
     def __getitem__(self, key):
-        if isinstance(self._node, (dict, list, tuple)) or NodeSchemaInfo.traversable(self._node):
-            child = self._node.__asdf_traverse__()[key] if NodeSchemaInfo.traversable(self._node) else self._node[key]
+        if isinstance(self._node, (dict, list, tuple)) or _is_traversable(self._node, self._extension_manager):
+            # TODO allow extension manager defined traversal
+            if hasattr(self._node, "__asdf_traverse__"):
+                child = self._node.__asdf_traverse__()[key]
+            else:
+                child = self._node[key]
         else:
             msg = "This node cannot be indexed"
             raise TypeError(msg)
@@ -372,7 +376,7 @@ class AsdfSearchResult:
         )
 
 
-def _walk_tree_breadth_first(root_identifiers, root_node, callback):
+def _walk_tree_breadth_first(root_identifiers, root_node, extension_manager, callback):
     """
     Walk the tree in breadth-first order (useful for prioritizing
     lower-depth nodes).
@@ -383,9 +387,10 @@ def _walk_tree_breadth_first(root_identifiers, root_node, callback):
         next_nodes = []
 
         for identifiers, parent, node in current_nodes:
-            if (isinstance(node, (dict, list, tuple)) or NodeSchemaInfo.traversable(node)) and id(node) in seen:
+            if (isinstance(node, (dict, list, tuple)) or _is_traversable(node, extension_manager)) and id(node) in seen:
                 continue
-            tnode = node.__asdf_traverse__() if NodeSchemaInfo.traversable(node) else node
+            # TODO allow extension manager defined traversal
+            tnode = node.__asdf_traverse__() if hasattr(node, "__asdf_traverse__") else node
             children = get_children(tnode)
             callback(identifiers, parent, node, [c for _, c in children])
             next_nodes.extend([([*identifiers, i], node, c) for i, c in children])
