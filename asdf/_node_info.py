@@ -20,7 +20,7 @@ def _filter_tree(info, filters):
     return len(info.children) > 0 or all(f(info.node, info.identifier) for f in filters)
 
 
-def create_tree(key, node, identifier="root", filters=None):
+def create_tree(key, node, extension_manager, identifier="root", filters=None):
     """
     Create a `NodeSchemaInfo` tree which can be filtered from a base node.
 
@@ -30,6 +30,8 @@ def create_tree(key, node, identifier="root", filters=None):
         The key to look up.
     node : dict
         The asdf tree to search.
+    extension_manager : ExtensionManager
+        asdf ExtensionManager
     filters : list of functions
         A list of functions that take a node and identifier and return True if the node should be included in the tree.
     preserve_list : bool
@@ -41,6 +43,7 @@ def create_tree(key, node, identifier="root", filters=None):
         key,
         identifier,
         node,
+        extension_manager,
     )
 
     if len(filters) > 0 and not _filter_tree(schema_info, filters):
@@ -53,6 +56,7 @@ def collect_schema_info(
     key,
     path,
     node,
+    extension_manager,
     identifier="root",
     filters=None,
     preserve_list=True,
@@ -78,6 +82,7 @@ def collect_schema_info(
     schema_info = create_tree(
         key,
         node,
+        extension_manager,
         identifier=identifier,
         filters=[] if filters is None else filters,
     )
@@ -92,14 +97,6 @@ def collect_schema_info(
                 return None
 
     return info
-
-
-def _get_extension_manager():
-    from ._asdf import AsdfFile
-
-    af = AsdfFile()
-
-    return af.extension_manager
 
 
 def _is_traversable(node, extension_manager):
@@ -239,14 +236,12 @@ class NodeSchemaInfo:
         self.schema = schema
 
     @classmethod
-    def from_root_node(cls, key, root_identifier, root_node, schema=None):
+    def from_root_node(cls, key, root_identifier, root_node, extension_manager, schema=None):
         """
         Build a NodeSchemaInfo tree from the given ASDF root node.
         Intentionally processes the tree in breadth-first order so that recursively
         referenced nodes are displayed at their shallowest reference point.
         """
-        extension_manager = _get_extension_manager()
-
         current_nodes = [(None, root_identifier, root_node)]
         seen = set()
         root_info = None

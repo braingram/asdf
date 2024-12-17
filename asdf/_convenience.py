@@ -40,8 +40,10 @@ def info(node_or_path, max_rows=DEFAULT_MAX_ROWS, max_cols=DEFAULT_MAX_COLS, sho
         Set to False to disable display of primitive values in
         the rendered tree.
     """
-    with _manage_node(node_or_path) as node:
-        lines = render_tree(node, max_rows=max_rows, max_cols=max_cols, show_values=show_values, identifier="root")
+    with _manage_node(node_or_path) as (node, extension_manager):
+        lines = render_tree(
+            node, extension_manager, max_rows=max_rows, max_cols=max_cols, show_values=show_values, identifier="root"
+        )
         print("\n".join(lines))
 
 
@@ -49,10 +51,14 @@ def info(node_or_path, max_rows=DEFAULT_MAX_ROWS, max_cols=DEFAULT_MAX_COLS, sho
 def _manage_node(node_or_path):
     if isinstance(node_or_path, (str, pathlib.Path)):
         with open_asdf(node_or_path) as af:
-            yield af.tree
+            yield af.tree, af.extension_manager
 
     elif isinstance(node_or_path, AsdfFile):
-        yield node_or_path.tree
+        yield node_or_path.tree, node_or_path.extension_manager
 
     else:
-        yield node_or_path
+        # Ideally we'd use the extension_manager from the AsdfFile
+        # instance for this node. In this context we don't have that
+        # so make a new one.
+        af = AsdfFile()
+        yield node_or_path, af.extension_manager

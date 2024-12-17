@@ -31,6 +31,7 @@ DEFAULT_SHOW_VALUES = True
 
 def render_tree(
     node,
+    extension_manager,
     max_rows=DEFAULT_MAX_ROWS,
     max_cols=DEFAULT_MAX_COLS,
     show_values=DEFAULT_SHOW_VALUES,
@@ -41,8 +42,9 @@ def render_tree(
     Render a tree as text with indents showing depth.
     """
     info = create_tree(
-        key="title",
-        node=node,
+        "title",
+        node,
+        extension_manager,
         identifier=identifier,
         filters=[] if filters is None else filters,
     )

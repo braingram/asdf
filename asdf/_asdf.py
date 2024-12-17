@@ -1401,6 +1401,7 @@ class AsdfFile:
             key,
             path,
             self.tree,
+            self.extension_manager,
             preserve_list=preserve_list,
         )
 
@@ -1436,6 +1437,7 @@ class AsdfFile:
 
         lines = display.render_tree(
             self.tree,
+            self.extension_manager,
             max_rows=max_rows,
             max_cols=max_cols,
             show_values=show_values,
@@ -1485,7 +1487,7 @@ class AsdfFile:
         asdf.search.AsdfSearchResult
             the result of the search
         """
-        result = AsdfSearchResult(["root"], self.tree)
+        result = AsdfSearchResult(["root"], self.tree, self.extension_manager)
         return result.search(key=key, type_=type_, value=value, filter_=filter_)
 
     # This function is called from within yamlutil methods to create

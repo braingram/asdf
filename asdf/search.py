@@ -24,6 +24,7 @@ class AsdfSearchResult:
         self,
         identifiers,
         node,
+        extension_manager,
         filters=None,
         parent_node=None,
         max_rows=DEFAULT_MAX_ROWS,
@@ -32,6 +33,7 @@ class AsdfSearchResult:
     ):
         self._identifiers = identifiers
         self._node = node
+        self._extension_manager = extension_manager
         self._filters = [] if filters is None else filters
         self._parent_node = parent_node
         self._max_rows = max_rows
@@ -82,6 +84,7 @@ class AsdfSearchResult:
         return AsdfSearchResult(
             self._identifiers,
             self._node,
+            self._extension_manager,
             filters=self._filters,
             parent_node=self._parent_node,
             max_rows=max_rows,
@@ -205,6 +208,7 @@ class AsdfSearchResult:
         return AsdfSearchResult(
             self._identifiers,
             self._node,
+            self._extension_manager,
             filters=[*self._filters, _filter],
             parent_node=self._parent_node,
             max_rows=self._max_rows,
@@ -314,6 +318,7 @@ class AsdfSearchResult:
     def __repr__(self):
         lines = render_tree(
             self._node,
+            self._extension_manager,
             max_rows=self._max_rows,
             max_cols=self._max_cols,
             show_values=self._show_values,
@@ -343,6 +348,7 @@ class AsdfSearchResult:
             key,
             None,
             self._node,
+            self._extension_manager,
             filters=self._filters,
             preserve_list=preserve_list,
         )
@@ -357,6 +363,7 @@ class AsdfSearchResult:
         return AsdfSearchResult(
             [*self._identifiers, key],
             child,
+            self._extension_manager,
             filters=self._filters,
             parent_node=self._node,
             max_rows=self._max_rows,
