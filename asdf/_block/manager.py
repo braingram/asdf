@@ -90,10 +90,8 @@ class OptionsStore(store.Store):
     ``ReadBlock`` to determine default Options.
     """
 
-    def __init__(self, read_blocks):
+    def __init__(self):
         super().__init__()
-        # ReadBlocks are needed to look up default options
-        self._read_blocks = read_blocks
 
     def has_options(self, array):
         """
@@ -115,7 +113,7 @@ class OptionsStore(store.Store):
         base = util.get_array_base(array)
         return self.lookup_by_object(base) is not None
 
-    def get_options_from_block(self, array):
+    def get_options_from_block(self, array, manager):
         """
         Get Options for some array using only settings read from a
         corresponding ReadBlock (one that shares the same base array).
@@ -129,6 +127,9 @@ class OptionsStore(store.Store):
             The base of this array (see `asdf.util.get_array_base`) will
             be used to lookup a corresponding ReadBlock.
 
+        manager : BlockManager
+            BlockManager instance with potentially matching blocks.
+
         Returns
         -------
         options : Options or None
@@ -137,7 +138,7 @@ class OptionsStore(store.Store):
         """
         base = util.get_array_base(array)
         # look up by block with matching _data
-        for block in self._read_blocks:
+        for block in manager.blocks:
             if block._cached_data is base or block._data is base:
                 # init options
                 if block.header["flags"] & constants.BLOCK_FLAG_STREAMED:
@@ -148,7 +149,7 @@ class OptionsStore(store.Store):
                 return options
         return None
 
-    def get_options(self, array):
+    def get_options(self, array, manager):
         """
         Get Options for some array using either previously defined
         options (as set by ``set_options``) or settings read from a
@@ -164,6 +165,9 @@ class OptionsStore(store.Store):
             The base of this array (see `asdf.util.get_array_base`) will
             be used to lookup any Options in the Store.
 
+        manager : BlockManager
+            BlockManager instance with existing blocks.
+
         Returns
         -------
         options : Options or None
@@ -173,7 +177,7 @@ class OptionsStore(store.Store):
         base = util.get_array_base(array)
         options = self.lookup_by_object(base)
         if options is None:
-            options = self.get_options_from_block(base)
+            options = self.get_options_from_block(base, manager)
             if options is not None:
                 self.set_options(base, options)
         if options is None:
@@ -212,10 +216,15 @@ class OptionsStore(store.Store):
         base = util.get_array_base(array)
         self.assign_object(base, options)
 
-    def get_output_compressions(self):
+    def get_output_compressions(self, manager):
         """
         Get all output compression types used for this Store of
         Options.
+
+        Parameters
+        ----------
+        manager : BlockManager
+            BlockManager with existing blocks.
 
         Returns
         -------
@@ -225,7 +234,7 @@ class OptionsStore(store.Store):
         compressions = set()
         cfg = config.get_config()
         if cfg.all_array_compression == "input":
-            for blk in self._read_blocks:
+            for blk in manager.blocks:
                 if blk.header["compression"]:
                     compressions.add(blk.header["compression"])
         else:
@@ -281,11 +290,8 @@ class Manager:
     """
 
     def __init__(self, read_blocks=None, uri=None, lazy_load=False, memmap=False, validate_checksums=False):
-        if read_blocks is None:
-            read_blocks = ReadBlocks([])
-        self.options = OptionsStore(read_blocks)
-
-        self._blocks = read_blocks
+        self.options = OptionsStore()
+        self._blocks = ReadBlocks([])
         self._external_block_cache = external.ExternalBlockCache()
         self._data_callbacks = store.Store()
 
@@ -308,9 +314,10 @@ class Manager:
     def close(self):
         self._external_block_cache.clear()
         self._clear_write()
-        for blk in self.blocks:
-            blk.close()
-        self.options = OptionsStore(self.blocks)
+        if not callable(self._blocks):
+            for blk in self.blocks:
+                blk.close()
+        self.options = OptionsStore()
 
     @property
     def blocks(self):
@@ -323,6 +330,8 @@ class Manager:
             List of ReadBlock instances created during a call to read
             or update.
         """
+        if callable(self._blocks):
+            self.blocks = self._blocks()
         return self._blocks
 
     @blocks.setter
@@ -330,9 +339,6 @@ class Manager:
         if not isinstance(new_blocks, ReadBlocks):
             new_blocks = ReadBlocks(new_blocks)
         self._blocks = new_blocks
-        # we propagate these blocks to options so that
-        # options lookups can fallback to the new read blocks
-        self.options._read_blocks = new_blocks
 
     def read(self, fd, after_magic=False):
         """
@@ -347,9 +353,18 @@ class Manager:
             If True, the file pointer is past the block magic bytes of the
             first block.
         """
-        self.blocks = reader.read_blocks(
-            fd, self._memmap, self._lazy_load, self._validate_checksums, after_magic=after_magic
-        )
+        if not self._lazy_load or not fd.seekable():
+            self.blocks = reader.read_blocks(
+                fd, self._memmap, self._lazy_load, self._validate_checksums, after_magic=after_magic
+            )
+        else:
+            # TODO lazily make these blocks, fix all the mess here
+            def lazy_load_all_blocks():
+                return reader.read_blocks(
+                    fd, self._memmap, self._lazy_load, self._validate_checksums, after_magic=after_magic
+                )
+
+            self._blocks = lazy_load_all_blocks
 
     def _load_external(self, uri):
         value = self._external_block_cache.load(self._uri, uri, self._memmap, self._validate_checksums)
@@ -469,40 +484,43 @@ class Manager:
         return DataCallback(index, self.blocks)
 
     def _set_array_storage(self, data, storage):
-        options = self.options.get_options(data)
+        options = self.options.get_options(data, self)
         options.storage_type = storage
         self.options.set_options(data, options)
 
     def _get_array_storage(self, data):
-        return self.options.get_options(data).storage_type
+        return self.options.get_options(data, self).storage_type
 
     def _set_array_compression(self, arr, compression, **compression_kwargs):
         # if this is input compression but we already have defined options
         # we need to re-lookup the options based off the block
         if compression == "input" and self.options.has_options(arr):
-            from_block_options = self.options.get_options_from_block(arr)
+            from_block_options = self.options.get_options_from_block(arr, self)
             if from_block_options is not None:
                 compression = from_block_options.compression
-        options = self.options.get_options(arr)
+        options = self.options.get_options(arr, self)
         options.compression = compression
         options.compression_kwargs = compression_kwargs
 
     def _get_array_compression(self, arr):
-        return self.options.get_options(arr).compression
+        return self.options.get_options(arr, self).compression
 
     def _get_array_compression_kwargs(self, arr):
-        return self.options.get_options(arr).compression_kwargs
+        return self.options.get_options(arr, self).compression_kwargs
 
     def get_output_compressions(self):
-        return self.options.get_output_compressions()
+        return self.options.get_output_compressions(self)
+
+    def get_options(self, arr):
+        return self.options.get_options(arr, self)
 
     def _set_array_save_base(self, data, save_base):
-        options = self.options.get_options(data)
+        options = self.options.get_options(data, self)
         options.save_base = save_base
         self.options.set_options(data, options)
 
     def _get_array_save_base(self, data):
-        return self.options.get_options(data).save_base
+        return self.options.get_options(data, self).save_base
 
     @contextlib.contextmanager
     def options_context(self):
@@ -513,7 +531,6 @@ class Manager:
         previous_options = copy.deepcopy(self.options)
         yield
         self.options = previous_options
-        self.options._read_blocks = self.blocks
 
     @contextlib.contextmanager
     def write_context(self, fd, copy_options=True):

@@ -48,7 +48,7 @@ class NDArrayConverter(Converter):
             if options is None:
                 options = Options("external")
         else:
-            options = ctx._blocks.options.get_options(data)
+            options = ctx._blocks.get_options(data)
 
         # The ndarray-1.0.0 schema does not permit 0 valued strides.
         # Perhaps we'll want to allow this someday, to efficiently

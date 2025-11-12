@@ -151,7 +151,7 @@ def test_block_mismatch():
     )
 
     buff.seek(0)
-    with pytest.raises(ValueError, match=r"Header size must be >= 48"), asdf.open(buff):
+    with pytest.raises(ValueError, match=r"Header size must be >= 48"), asdf.open(buff, lazy_load=False):
         pass
 
 
@@ -161,7 +161,7 @@ def test_block_header_too_small():
     buff = io.BytesIO(b"#ASDF 1.0.0\n\xd3BLK\0\0")
 
     buff.seek(0)
-    with pytest.raises(ValueError, match=r"Header size must be >= 48"), asdf.open(buff):
+    with pytest.raises(ValueError, match=r"Header size must be >= 48"), asdf.open(buff, lazy_load=False):
         pass
 
 

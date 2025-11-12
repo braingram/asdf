@@ -9,7 +9,7 @@ from asdf._block.options import Options
 
 
 def test_set_streamed_block_via_options():
-    options = manager.OptionsStore(manager.ReadBlocks())
+    options = manager.OptionsStore()
     arr1 = np.arange(10, dtype="uint8")
     arr2 = np.arange(5, dtype="uint8")
     options.set_options(arr1, Options("streamed"))
