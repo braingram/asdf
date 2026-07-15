@@ -51,7 +51,7 @@ jobs:
   core-generate-jobs:
     runs-on: ubuntu-latest
     outputs:
-      item: ${{ steps.set-matrix.outputs.item }}
+      session: ${{ steps.set-matrix.outputs.session }}
     steps:
     - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       with:
@@ -59,16 +59,21 @@ jobs:
     - uses: wntrblm/nox@3284968a16fa5bd7fc0cc64a69a531404ccb4756 # 2026.07.11
     - id: set-matrix
       shell: bash
-      run: "echo item=$(nox --json -l -t core | jq -c '[{\"session\": .[].session, \"runs-on\": \"ubuntu-latest\"}, {\"session\": \"core-3.12\", \"runs-on\": \"windows-latest\"}, {\"session\": \"core-3.12\", \"runs-on\": \"macos-latest\"}]') | tee --append $GITHUB_OUTPUT"
+      run: echo session=$(nox --json -l -t core | jq -c '[.[].session]') | tee --append $GITHUB_OUTPUT
   core:
-    name: ${{ matrix.item.session }}-${{ matrix.item.runs-on }}
-    runs-on: ${{ matrix.item.runs-on }}
+    name: ${{ matrix.session }}-${{ matrix.runs-on }}
+    runs-on: ${{ matrix.runs-on }}
     needs: [core-generate-jobs]
     strategy:
       fail-fast: false
       matrix:
-        item: ${{ fromJson(needs.core-generate-jobs.outputs.item) }}
-        # TODO exclude jsonschema based on tag/session
+        session: ${{ fromJson(needs.core-generate-jobs.outputs.session) }}
+        runs-on: [ubuntu-latest]
+        include:
+        - session: core-3.12
+          runs-on: windows-latest
+        - session: core-3.12
+          runs-on: macos-latest
     steps:
     - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       with:
@@ -79,9 +84,9 @@ jobs:
     - uses: wntrblm/nox@3284968a16fa5bd7fc0cc64a69a531404ccb4756 # 2026.07.11
     - run: nox -v -s "${MATRIX_SESSION}"
       env:
-        MATRIX_SESSION: ${{ matrix.item.session }}
+        MATRIX_SESSION: ${{ matrix.session }}
       shell: bash
-    - if: ${{ contains(matrix.item.session, 'coverage') }}
+    - if: ${{ contains(matrix.session, 'coverage') }}
       uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
       with:
         fail_ci_if_error: true
