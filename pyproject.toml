@@ -115,6 +115,7 @@ force-exclude = '''
 
 [tool.pytest.ini_options]
 testpaths = ["asdf", "docs"]
+norecursedirs = ["docs/hooks", "docs/overrides"]
 minversion = "4.6"
 filterwarnings = [
   "error",  # also set in _tests/conftest to work with pyargs

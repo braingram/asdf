@@ -13,7 +13,7 @@ watch:
   - CHANGES.md
 theme:
   name: material
-  custom_dir: docs/.overrides
+  custom_dir: docs/overrides
   favicon: assets/favicon.ico
   logo: assets/logo-dark-mode.png
   features:
@@ -57,9 +57,9 @@ theme:
         name: Switch to system preference
 
 hooks:
-- docs/.hooks/toctree.py
-- docs/.hooks/strip_doctest_flags.py
-- docs/.hooks/export_legacy_labels.py
+- docs/hooks/toctree.py
+- docs/hooks/strip_doctest_flags.py
+- docs/hooks/export_legacy_labels.py
 extra_css:
 - assets/stylesheets/mkdocstrings.css
 - assets/stylesheets/asdf.css
@@ -69,6 +69,8 @@ extra_javascript:
 exclude_docs: |
   # literate-nav files not actually part of the final docs
   SUMMARY.md
+  hooks
+  overrides
 not_in_nav: |
   # API docs are selectively included in navigation
   api/
@@ -113,7 +115,7 @@ markdown_extensions:
 plugins:
 - search
 - macros:
-    module_name: docs/.overrides/macros
+    module_name: docs/overrides/macros
 - autorefs
 # Generate API docs pages for all modules automatically
 - api-autonav:
@@ -191,5 +193,5 @@ extra:
     href: https://www.asdf-format.org/en/latest/tutorials/index.html
   - title: Community
     href: https://www.asdf-format.org/en/latest/community/index.html
-  legacy_labels_path: docs/.hooks/legacy_labels.csv  # Config for `export_legacy_labels` hook
+  legacy_labels_path: docs/hooks/legacy_labels.csv  # Config for `export_legacy_labels` hook
   asdf_standard_docs: https://www.asdf-format.org/projects/asdf-standard/en/latest/
