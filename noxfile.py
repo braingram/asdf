@@ -459,7 +459,12 @@ def docs(session: Session) -> None:
     to reuse the virtual environment and skip reinstalling dependencies, e.g. `nox -R -s docs`.
     """
     Asdf(extras=["all", "typing"], deps_groups=["docs"]).install(session)
+    env = {}
+
     if not session.posargs:
         session.posargs.append("build")
 
-    session.run("properdocs", *session.posargs)
+    if "build" in session.posargs:
+        env |= {"ASDF_DOCS_OFFLINE": "true"}
+
+    session.run("properdocs", *session.posargs, env=env)
