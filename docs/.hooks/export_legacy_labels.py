@@ -37,10 +37,6 @@ def on_env(env: Environment, /, *, config: ProperDocsConfig, files: Files) -> En
     mkdocstrings = typing.cast("MkdocstringsPlugin", config.plugins["mkdocstrings"])
     inventory = mkdocstrings.handlers.inventory
 
-    if not config.use_directory_urls:
-        log.info("Skipping exporting legacy labels: 'use_directory_urls' is disabled")
-        return
-
     # This is needed with `properdocs serve`
     ANCHORS.clear()
     LABELS.clear()
