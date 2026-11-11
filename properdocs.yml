@@ -194,9 +194,6 @@ extra:
   legacy_labels_path: docs/.hooks/legacy_labels.csv  # Config for `export_legacy_labels` hook
   external_links: # Config for `extlink` macro
     check: true
-    stdatamodels:
-      url: https://stdatamodels.readthedocs.io/en/latest/
-      suffix: ".html"
     asdf_standard:
       url: https://www.asdf-format.org/projects/asdf-standard/en/latest/
       suffix: ".html"

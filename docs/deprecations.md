@@ -70,7 +70,7 @@ This deprecated api is replaced by new-style [converters](extending/converters.m
 
 ### ASDF-in-FITS Deprecation { #asdf-in-fits }
 
-Support for `AsdfInFits` (including the `asdf.fits_embed` module) is deprecated. Code using this format can migrate to using [`stdatamodels`][] which contains functions to read and write AsdfInFits files (see {{ stdatamodels('AsdfInFits', 'asdf_in_fits') }} for migration information).
+Support for `AsdfInFits` (including the `asdf.fits_embed` module) is deprecated. Code using this format can migrate to using [`stdatamodels`][] which contains functions to read and write AsdfInFits files (see [AsdfInFits](https://stdatamodels.readthedocs.io/en/latest/asdf_in_fits.html) for migration information).
 
 Without support for `fits_embed.AsdfInFits` the `extract` and `remove-hdu` commands for [asdftool](asdf_tool.md) are no longer usable and are deprecated.
 
