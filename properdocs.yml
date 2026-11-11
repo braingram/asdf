@@ -200,6 +200,3 @@ extra:
     asdf_standard:
       url: https://www.asdf-format.org/projects/asdf-standard/en/latest/
       suffix: ".html"
-    pytest:
-      url: https://docs.pytest.org/en/latest/
-      suffix: ".html"

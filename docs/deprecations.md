@@ -37,7 +37,7 @@ SerializationContext was previously importable from `asdf.asdf.SerializationCont
 
 ## Version 2.15
 
-ASDF 2.15 introduced many new [`asdf.exceptions.AsdfDeprecationWarning`][] messages. These warnings are subclasses of the built-in python [`DeprecationWarning`][] and will by default be ignored except in `__main__` and with testing tools such as {{ pytest('pytest', 'how-to/capture-warnings#deprecation-warnings') }}.
+ASDF 2.15 introduced many new [`asdf.exceptions.AsdfDeprecationWarning`][] messages. These warnings are subclasses of the built-in python [`DeprecationWarning`][] and will by default be ignored except in `__main__` and with testing tools such as [pytest](https://docs.pytest.org/en/stable/how-to/capture-warnings.html#how-to-capture-warnings).
 
 These are intended to highlight use of features that we will likely remove in the next major version of ASDF (see our *[Release Cycle and Major Dependency Support Policy](release_and_support.md)* for more details about our versioning, compatibility and support policy).
 
