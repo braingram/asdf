@@ -41,6 +41,14 @@ def on_env(env: Environment, /, *, config: ProperDocsConfig, files: Files) -> En
     ANCHORS.clear()
     LABELS.clear()
 
+    for fileinfo in files:
+        if not fileinfo.is_documentation_page():
+            continue
+        uri = fileinfo.dest_uri
+        name = str(Path(uri).with_suffix(""))
+        # RIP, name needs to be unique...
+        inventory.register(name, "std", "doc", uri, dispname=name)
+
     for label in LegacyLabel.load(config):
         LABELS.append(label)
         inventory.register(label.anchor, "std", "label", label.url, dispname=label.title)
