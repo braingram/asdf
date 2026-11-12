@@ -134,11 +134,8 @@ plugins:
     enabled: !ENV [ASDF_DOCS_OFFLINE, false]
 - redirects:
     redirect_maps:
-      'changes.md': 'changelog.md'
       'user_api.md': 'user/index.md'
       'developer_api.md': 'developer/index.md'
-      'using_extensions.md': 'features/using_extensions.md'
-      'arrays.md': 'features/arrays.md'
 
 - mkdocstrings:
     handlers:

@@ -45,9 +45,17 @@ def on_env(env: Environment, /, *, config: ProperDocsConfig, files: Files) -> En
         if not fileinfo.is_documentation_page():
             continue
         uri = fileinfo.dest_uri
-        name = str(Path(uri).with_suffix(""))
-        # RIP, name needs to be unique...
-        inventory.register(name, "std", "doc", uri, dispname=name)
+        # Prefix the names with asdf/ to match the old std:doc entries
+        # and to make the names unique. mkdocs requires these to be unique
+        # and unfortunately they conflict with the labels below. Do not
+        # prefix api docs or index as those don't have labeled and were
+        # not previously prefixed with asdf.
+        basename = str(Path(uri).with_suffix(""))
+        if basename.startswith("api/") or basename == "index":
+            name = basename
+        else:
+            name = f"asdf/{basename}"
+        inventory.register(name, "std", "doc", uri, dispname=basename)
 
     for label in LegacyLabel.load(config):
         LABELS.append(label)
