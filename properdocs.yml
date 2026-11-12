@@ -61,7 +61,6 @@ hooks:
 - docs/hooks/strip_doctest_flags.py
 - docs/hooks/export_legacy_labels.py
 extra_css:
-- assets/stylesheets/mkdocstrings.css
 - assets/stylesheets/asdf.css
 extra_javascript:
 - assets/scripts/readthedocs.js
