@@ -103,13 +103,15 @@ markdown_extensions:
     anchor_linenums: true
     pygments_lang_class: true
     line_spans: __span
+# Additional syntax highlighting
 - pymdownx.superfences
+# Provides tabs (===)
 - pymdownx.tabbed:
     alternate_style: true
 # Convert `--` to emdash, `...` to ellipse, etc
 - smarty
+# Convert {tm} to trademark symbol, etc
 - pymdownx.smartsymbols
-- md_in_html
 
 plugins:
 - search
