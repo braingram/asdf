@@ -81,8 +81,8 @@ validation:
   anchors: warn
 
 markdown_extensions:
+# We don't use [TOC] but this is used to add permalinks to all headers
 - toc:
-    # We don't use [TOC] but this is used to add permalinks to all headers
     permalink: true
 # Enable footnotes [^1]
 - footnotes
