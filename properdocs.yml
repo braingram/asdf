@@ -82,15 +82,15 @@ validation:
 
 markdown_extensions:
 - toc:
-    # Add permalinks to all headers
+    # We don't use [TOC] but this is used to add permalinks to all headers
     permalink: true
 - footnotes
 # Required for several other plugins to work correctly
 - attr_list
+# Require space after # for a valid heading
 - pymdownx.saneheaders
 # Regular and collapsible admonitions
 - admonition
-- pymdownx.details
 # Preprocessing to include snippets from other files
 - pymdownx.snippets:
     base_path:
